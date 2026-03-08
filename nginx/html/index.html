@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engram MCP - 记忆管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .nav a {
+            color: var(--text-light);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .nav a:hover, .nav a.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .stat-card .value.primary { color: var(--primary); }
+        .stat-card .value.success { color: var(--success); }
+        .stat-card .value.warning { color: var(--warning); }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .search-box input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .memory-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .memory-item {
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            transition: border-color 0.2s;
+        }
+        
+        .memory-item:hover {
+            border-color: var(--primary);
+        }
+        
+        .memory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .memory-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .tag {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .tag.layer-buffer { background: #fef3c7; color: #92400e; }
+        .tag.layer-working { background: #dbeafe; color: #1e40af; }
+        .tag.layer-core { background: #d1fae5; color: #065f46; }
+        
+        .tag.type-episodic { background: #fce7f3; color: #9d174d; }
+        .tag.type-semantic { background: #e0e7ff; color: #3730a3; }
+        .tag.type-procedural { background: #f3e8ff; color: #6b21a8; }
+        
+        .memory-content {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+        
+        .memory-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+        
+        .topic-tree {
+            padding: 1rem 0;
+        }
+        
+        .topic-item {
+            padding: 0.75rem;
+            border-left: 2px solid var(--border);
+            margin-left: 1rem;
+        }
+        
+        .topic-item.root {
+            border-left: none;
+            margin-left: 0;
+        }
+        
+        .topic-name {
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .topic-name:hover {
+            color: var(--primary);
+        }
+        
+        .topic-count {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            font-weight: normal;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-light);
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .tab-nav {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -0.5rem;
+        }
+        
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+            </svg>
+            Engram MCP
+        </h1>
+        <nav class="nav">
+            <a href="#" class="active" data-page="dashboard">仪表盘</a>
+            <a href="#" data-page="memories">记忆</a>
+            <a href="#" data-page="topics">主题</a>
+            <a href="#" data-page="triggers">触发器</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="dashboard-page">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>总记忆数</h3>
+                    <div class="value primary" id="total-memories">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>核心层记忆</h3>
+                    <div class="value success" id="core-memories">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>工作层记忆</h3>
+                    <div class="value" id="working-memories">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>缓冲层记忆</h3>
+                    <div class="value warning" id="buffer-memories">-</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>记忆类型分布</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>情景记忆</h3>
+                        <div class="value" id="episodic-count">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>语义记忆</h3>
+                        <div class="value" id="semantic-count">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>程序记忆</h3>
+                        <div class="value" id="procedural-count">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>主题数</h3>
+                        <div class="value" id="topics-count">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="memories-page" class="hidden">
+            <div class="card">
+                <h2>搜索记忆</h2>
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="输入关键词搜索记忆...">
+                    <button class="btn" onclick="searchMemories()">搜索</button>
+                </div>
+                
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="filterByLayer('all')">全部</button>
+                    <button class="tab-btn" onclick="filterByLayer('buffer')">缓冲层</button>
+                    <button class="tab-btn" onclick="filterByLayer('working')">工作层</button>
+                    <button class="tab-btn" onclick="filterByLayer('core')">核心层</button>
+                </div>
+                
+                <div class="memory-list" id="memory-list">
+                    <div class="loading"><div class="spinner"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="topics-page" class="hidden">
+            <div class="card">
+                <h2>主题树</h2>
+                <div id="topic-tree">
+                    <div class="loading"><div class="spinner"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="triggers-page" class="hidden">
+            <div class="card">
+                <h2>触发器</h2>
+                <div id="trigger-list">
+                    <div class="loading"><div class="spinner"></div></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8001' 
+            : '/api';
+        
+        let currentPage = 'dashboard';
+        let currentLayer = 'all';
+        let memories = [];
+
+        document.querySelectorAll('.nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = e.target.dataset.page;
+                navigateTo(page);
+            });
+        });
+
+        function navigateTo(page) {
+            document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+            document.querySelector(`[data-page="${page}"]`).classList.add('active');
+            
+            document.querySelectorAll('[id$="-page"]').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`${page}-page`).classList.remove('hidden');
+            
+            currentPage = page;
+            
+            if (page === 'dashboard') loadStats();
+            if (page === 'memories') loadMemories();
+            if (page === 'topics') loadTopics();
+            if (page === 'triggers') loadTriggers();
+        }
+
+        async function apiCall(endpoint) {
+            try {
+                const resp = await fetch(`${API_BASE}/api/v1${endpoint}`);
+                return await resp.json();
+            } catch (e) {
+                console.error(e);
+                return null;
+            }
+        }
+
+        async function loadStats() {
+            const stats = await apiCall('/stats');
+            if (!stats) return;
+            
+            document.getElementById('total-memories').textContent = stats.total_memories || 0;
+            document.getElementById('core-memories').textContent = stats.by_layer?.core || 0;
+            document.getElementById('working-memories').textContent = stats.by_layer?.working || 0;
+            document.getElementById('buffer-memories').textContent = stats.by_layer?.buffer || 0;
+            
+            document.getElementById('episodic-count').textContent = stats.by_type?.episodic || 0;
+            document.getElementById('semantic-count').textContent = stats.by_type?.semantic || 0;
+            document.getElementById('procedural-count').textContent = stats.by_type?.procedural || 0;
+            document.getElementById('topics-count').textContent = stats.topics_count || 0;
+        }
+
+        async function loadMemories() {
+            const data = await apiCall('/memories/search');
+            if (!data) return;
+            
+            memories = data.results || [];
+            renderMemories(memories);
+        }
+
+        async function searchMemories() {
+            const query = document.getElementById('search-input').value;
+            if (!query) {
+                loadMemories();
+                return;
+            }
+            
+            const data = await apiCall('/memories/search');
+            if (!data) return;
+            
+            const filtered = (data.results || []).filter(m => 
+                m.content.toLowerCase().includes(query.toLowerCase())
+            );
+            renderMemories(filtered);
+        }
+
+        function filterByLayer(layer) {
+            currentLayer = layer;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (layer === 'all') {
+                renderMemories(memories);
+            } else {
+                const filtered = memories.filter(m => m.layer === layer);
+                renderMemories(filtered);
+            }
+        }
+
+        function renderMemories(memories) {
+            const list = document.getElementById('memory-list');
+            
+            if (!memories || memories.length === 0) {
+                list.innerHTML = '<div class="empty-state">暂无记忆数据</div>';
+                return;
+            }
+            
+            list.innerHTML = memories.map(m => `
+                <div class="memory-item">
+                    <div class="memory-header">
+                        <div class="memory-tags">
+                            <span class="tag layer-${m.layer}">${m.layer}</span>
+                            <span class="tag type-${m.memory_type}">${m.memory_type}</span>
+                        </div>
+                    </div>
+                    <div class="memory-content">${escapeHtml(m.content)}</div>
+                    <div class="memory-meta">
+                        <span>创建于: ${new Date(m.created_at).toLocaleString('zh-CN')}</span>
+                        <span>访问: ${m.access_count} 次</span>
+                        <span>质量: ${m.quality_score ? m.quality_score.toFixed(2) : '-'}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadTopics() {
+            const topics = await apiCall('/topics');
+            const tree = document.getElementById('topic-tree');
+            
+            if (!topics || topics.length === 0) {
+                tree.innerHTML = '<div class="empty-state">暂无主题数据</div>';
+                return;
+            }
+            
+            const roots = topics.filter(t => !t.parent_id);
+            
+            tree.innerHTML = roots.map(topic => renderTopic(topic, topics)).join('');
+        }
+
+        function renderTopic(topic, allTopics) {
+            const children = allTopics.filter(t => t.parent_id === topic.id);
+            const hasChildren = children.length > 0;
+            
+            return `
+                <div class="topic-item ${topic.parent_id ? '' : 'root'}">
+                    <div class="topic-name" onclick="loadTopicMemories('${topic.id}')">
+                        📁 ${topic.name}
+                        <span class="topic-count">(${topic.memory_count} 条记忆)</span>
+                    </div>
+                    ${hasChildren ? children.map(c => renderTopic(c, allTopics)).join('') : ''}
+                </div>
+            `;
+        }
+
+        async function loadTopicMemories(topicId) {
+            const data = await apiCall(`/topics/${topicId}/memories`);
+            if (!data) return;
+            
+            const list = document.getElementById('memory-list');
+            list.innerHTML = data.map(m => `
+                <div class="memory-item">
+                    <div class="memory-content">${escapeHtml(m.content)}</div>
+                </div>
+            `).join('');
+        }
+
+        async function loadTriggers() {
+            const triggers = await apiCall('/triggers');
+            const list = document.getElementById('trigger-list');
+            
+            if (!triggers || triggers.length === 0) {
+                list.innerHTML = '<div class="empty-state">暂无触发器</div>';
+                return;
+            }
+            
+            list.innerHTML = triggers.map(t => `
+                <div class="memory-item">
+                    <div class="memory-header">
+                        <strong>${t.name}</strong>
+                        <span class="tag">${t.action_type}</span>
+                    </div>
+                    <div class="memory-meta">
+                        <span>标签: ${t.trigger_tag}</span>
+                        <span>限制: ${t.limit}</span>
+                    </div>
+                    ${t.query_text ? `<div class="memory-content">${escapeHtml(t.query_text)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+sqlalchemy[asyncio]==2.0.35
+asyncpg==0.30.0
+redis==5.2.0
+aio-pika==9.4.3
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+langfuse>=2.0.0,<3.0.0
+litellm==1.52.9
+httpx==0.28.1
+python-multipart==0.0.20
