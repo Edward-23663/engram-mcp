@@ -27,6 +27,7 @@ from app.models.memory import get_db, AsyncSessionLocal
 from app.services.memory import MemoryService, TopicService, TriggerService
 from app.services.search import SearchService
 from app.core.rabbitmq import rabbitmq_client
+from app.core.redis import redis_client
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -327,22 +328,22 @@ class MCPMethodHandler:
             return {"success": True, "data": counts}
     
     async def _list_tools(self) -> Dict:
-        return {"success": True, "data": {
+        return {
             "tools": [
-                {"name": "memory.create", "description": "Create a new memory"},
-                {"name": "memory.get", "description": "Get a memory by ID"},
-                {"name": "memory.search", "description": "Search memories"},
-                {"name": "memory.list", "description": "List memories"},
-                {"name": "memory.mark_important", "description": "Mark memory as important"},
-                {"name": "memory.get_important", "description": "Get important memories"},
-                {"name": "topic.list", "description": "List topics"},
-                {"name": "topic.get", "description": "Get topic by ID"},
-                {"name": "trigger.fire", "description": "Fire a trigger"},
-                {"name": "trigger.list", "description": "List triggers"},
-                {"name": "session.resume", "description": "Get session resume data"},
-                {"name": "stats.get", "description": "Get memory statistics"},
+                {"name": "memory.create", "description": "Create a new memory", "inputSchema": {"type": "object", "properties": {"content": {"type": "string"}, "context": {"type": "object"}, "tags": {"type": "array", "items": {"type": "string"}}}, "required": ["content"]}},
+                {"name": "memory.get", "description": "Get a memory by ID", "inputSchema": {"type": "object", "properties": {"id": {"type": "string"}}, "required": ["id"]}},
+                {"name": "memory.search", "description": "Search memories", "inputSchema": {"type": "object", "properties": {"query": {"type": "string"}, "namespace": {"type": "string"}, "memory_types": {"type": "array", "items": {"type": "string"}}, "layers": {"type": "array", "items": {"type": "string"}}, "limit": {"type": "integer"}}}},
+                {"name": "memory.list", "description": "List memories", "inputSchema": {"type": "object", "properties": {"namespace": {"type": "string"}, "layer": {"type": "string"}, "limit": {"type": "integer"}}}},
+                {"name": "memory.mark_important", "description": "Mark memory as important", "inputSchema": {"type": "object", "properties": {"id": {"type": "string"}, "reason": {"type": "string"}}, "required": ["id"]}},
+                {"name": "memory.get_important", "description": "Get important memories", "inputSchema": {"type": "object", "properties": {"namespace": {"type": "string"}, "limit": {"type": "integer"}}}},
+                {"name": "topic.list", "description": "List topics", "inputSchema": {"type": "object", "properties": {"namespace": {"type": "string"}}}},
+                {"name": "topic.get", "description": "Get topic by ID", "inputSchema": {"type": "object", "properties": {"id": {"type": "string"}}, "required": ["id"]}},
+                {"name": "trigger.fire", "description": "Fire a trigger", "inputSchema": {"type": "object", "properties": {"id": {"type": "string"}, "trigger_tag": {"type": "string"}}}},
+                {"name": "trigger.list", "description": "List triggers", "inputSchema": {"type": "object", "properties": {"namespace": {"type": "string"}}}},
+                {"name": "session.resume", "description": "Get session resume data", "inputSchema": {"type": "object", "properties": {"namespace": {"type": "string"}}}},
+                {"name": "stats.get", "description": "Get memory statistics", "inputSchema": {"type": "object", "properties": {"namespace": {"type": "string"}}}},
             ]
-        }}
+        }
     
     async def _list_resources(self) -> Dict:
         return {"success": True, "data": {"resources": []}}
@@ -350,6 +351,10 @@ class MCPMethodHandler:
 
 async def init_services():
     """Initialize services"""
+    try:
+        await redis_client.connect()
+    except Exception as e:
+        print(f"Warning: Redis not connected: {e}", file=sys.stderr)
     try:
         await rabbitmq_client.connect()
     except Exception as e:
