@@ -172,23 +172,100 @@ curl http://localhost:8001/api/v1/resume
 | GET | `/api/v1/resume` | 会话恢复 |
 | GET | `/api/v1/stats` | 统计信息 |
 
-## MCP 集成
+## OpenCode 集成
 
-### OpenCode 配置
+### 本地运行
+
+如果 OpenCode 在本地运行，可以直接配置 stdio 模式：
+
+1. 在项目目录创建或编辑 `opencode.json`：
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": "allow",
+  "mcpServers": {
+    "engram-memory": {
+      "command": "python3",
+      "args": ["/path/to/engram-mcp/mcp_server.py"],
+      "env": {
+        "DATABASE_URL": "postgresql+asyncpg://user:password@localhost:5432/dbname",
+        "REDIS_URL": "redis://:password@localhost:6379/0",
+        "RABBITMQ_URL": "amqp://guest:guest@localhost:5672/",
+        "LITELLM_BASE_URL": "http://localhost:4000",
+        "LITELLM_API_KEY": "your-api-key",
+        "LITELLM_EMBED_MODEL": "text-embedding-3-small",
+        "LITELLM_CHAT_MODEL": "gpt-4o-mini",
+        "NAMESPACE": "default"
+      }
+    }
+  }
+}
+```
+
+2. 重启 OpenCode 即可自动加载 MCP 服务器
+
+### 可用的 MCP 方法
+
+| 方法 | 说明 |
+|------|------|
+| `memory.create` | 创建记忆 |
+| `memory.get` | 获取记忆 |
+| `memory.search` | 搜索记忆 |
+| `memory.list` | 列出记忆 |
+| `memory.mark_important` | 标记重要 |
+| `memory.get_important` | 获取重要记忆 |
+| `topic.list` | 列出主题 |
+| `topic.get` | 获取主题 |
+| `trigger.fire` | 触发触发器 |
+| `trigger.list` | 列出触发器 |
+| `session.resume` | 会话恢复 |
+| `stats.get` | 获取统计 |
+
+### 示例调用
+
+```python
+# 创建记忆
+{"method": "memory.create", "params": {"content": "用户偏好深色模式"}, "id": 1}
+
+# 搜索记忆
+{"method": "memory.search", "params": {"query": "用户偏好"}, "id": 2}
+
+# 获取重要记忆
+{"method": "memory.get_important", "params": {}, "id": 3}
+
+# 会话恢复
+{"method": "session.resume", "params": {}, "id": 4}
+```
+
+### 远程部署
+
+如果 OpenCode 在远程服务器，需要使用 HTTP API 方式集成：
 
 ```json
 {
   "mcpServers": {
-    "context-memory": {
+    "engram-memory": {
+      "url": "http://your-server:8001/mcp"
+    }
+  }
+}
+```
+
+### Cursor/Windsurf 配置
+
+```json
+{
+  "mcpServers": {
+    "engram-memory": {
       "command": "npx",
-      "args": ["-y", "context-memory-mcp"],
+      "args": ["-y", "engram-mcp-cli"],
       "env": {
         "ENGRAM_API_URL": "http://localhost:8001"
       }
     }
   }
 }
-```
 
 ### Cursor/Windsurf 配置
 

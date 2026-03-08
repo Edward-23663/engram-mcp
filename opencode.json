@@ -1,4 +1,20 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "permission": "allow"
+  "permission": "allow",
+  "mcpServers": {
+    "engram-memory": {
+      "command": "python3",
+      "args": ["/home/jianwei/.opencode/code1/engram-mcp/mcp_server.py"],
+      "env": {
+        "DATABASE_URL": "postgresql+asyncpg://app:postgres_password@localhost:5432/appdb",
+        "REDIS_URL": "redis://:redis_password@localhost:6379/0",
+        "RABBITMQ_URL": "amqp://guest:guest@localhost:5672/",
+        "LITELLM_BASE_URL": "http://localhost:4000",
+        "LITELLM_API_KEY": "litellm_key_123",
+        "LITELLM_EMBED_MODEL": "text-embedding-3-small",
+        "LITELLM_CHAT_MODEL": "gpt-4o-mini",
+        "NAMESPACE": "default"
+      }
+    }
+  }
 }
